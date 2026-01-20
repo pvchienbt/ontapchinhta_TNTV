@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn tập Tiếng Việt Cấp Tỉnh</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const ALL_QUESTIONS = [
+            { id: 1, type: 'fill', text: '“Hai ……a con bước đi trên cát\nÁnh mặt ……ời rực rỡ biển xanh\nBóng ……a dài lênh khênh\nBóng con ……òn ……ắc nịch.”\n(Hoàng Trung Thông)', instruction: 'Điền “ch” hoặc “tr” vào chỗ trống', answers: ['ch', 'tr', 'ch', 'tr', 'ch'], placeholders: 5 },
+            { id: 2, type: 'fill', text: 'Dọc ngang biết mấy nẻo đường\nThắm ……ang sử Việt, rạng ……ương anh hùng\nBao nhiêu ……iến thắng lẫy lừng\nLàm nên Tổ quốc kiêu hùng hôm nay.\n(Nguyễn Lâm Thắng)', instruction: 'Điền “ch” hoặc “tr” vào chỗ trống', answers: ['tr', 'ch', 'ch'], placeholders: 3 },
+            { id: 3, type: 'fill', text: 'Chị nhảy vào ổ lá\nNằm ……uống rồi đứng lên\nChân ……oay tròn ……ột ……oạt\nMột hồi mới nằm yên', instruction: 'Điền “x” hoặc “s” vào chỗ trống', answers: ['x', 'x', 's', 's'], placeholders: 4 },
+            { id: 4, type: 'fill', text: 'Yêu hàng ớt đã …..a hoa\nĐám …..ưa trổ nụ, đám cà trổ bông.\nYêu sao tiếng mẹ …..u nồng,\nTiếng thoi lách cách bên nong …..âu tằm.\n(Lê Anh Xuân)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['r', 'd', 'r', 'd'], placeholders: 4 },
+            { id: 5, type: 'fill', text: 'Mẹ ơi tóc bạc tuổi già,\nCấy đêm mẹ vẫn …..ông pha chẳng …..ờn.\nNgón tay bật máu mảnh bom,\nCấy bao nhiêu mạ, căm hờn bấy nhiêu.\n(Lê Anh Xuân)', instruction: 'Điền “x” hoặc “s” vào chỗ trống', answers: ['x', 's'], placeholders: 2 },
+            { id: 6, type: 'fill', text: 'Bốn mặt quê hương …..ải phóng …..ồi\nTôi bỗng thấy nội tôi trẻ lại\nNhư thời con gái tuổi đôi mươi\nNhư hàng …..ừa trước ngõ nhà tôi.\n(Lê Anh Xuân)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['gi', 'r', 'd'], placeholders: 3 },
+            { id: 7, type: 'fill', text: 'Bờ tre cõng tiếng sáo …..iều\nKhúc …..ân ca lại dặt dìu lời …..u\nBốn mùa là bốn câu thơ\nNgọt ngào nồng ấm …..ữa bờ ca …..ao.\n(Theo Nguyễn Lâm Thắng)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['d', 'd', 'r', 'gi', 'd'], placeholders: 5 },
+            { id: 8, type: 'fill', text: 'Nòi …..e đâu …..ịu mọc cong\nChưa lên đã nhọn như …..ông lạ thường\nLưng …..ần phơi nắng phơi sương\nCó manh áo cộc, …..e nhường cho con.\n(Theo Nguyễn Duy)', instruction: 'Điền “ch” hoặc “tr” vào chỗ trống', answers: ['tr', 'ch', 'ch', 'tr', 'tr'], placeholders: 5 },
+            { id: 9, type: 'fill', text: 'Việt Nam đẹp khắp trăm miền\nBốn mùa một sắc trời ……iêng đất này\nXóm làng, đồng …..uộng, …..ừng cây\nNon cao …..ó …..ựng, sông đầy nắng chang.\n(Theo Lê Anh Xuân)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['r', 'r', 'r', 'gi', 'd'], placeholders: 5 },
+            { id: 10, type: 'fill', text: 'Đầu ……ời ngất đỉnh Hà Giang,\nCà Mau mũi đất mỡ màng phù sa\nTrường Sơn: …..í lớn ông …..a\nCửu Long: lòng mẹ bao la sóng …..ào.\n(Theo Lê Anh Xuân)', instruction: 'Điền “ch” hoặc “tr” vào chỗ trống', answers: ['tr', 'ch', 'ch', 'tr'], placeholders: 4 },
+            { id: 11, type: 'correction', text: 'Đêm mưa, ngày nắng xá gì,\nQuân thù còn đó, ta đi chưa về.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'xá', correct: 'sá' },
+            { id: 12, type: 'correction', text: 'Rừng thu trăng dọi hòa bình\nNhớ ai tiếng hát ân tình thủy chung.\n(Theo Tố Hữu)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'dọi', correct: 'rọi' },
+            { id: 13, type: 'correction', text: 'Em yêu nhà em\nHàng xoan trước ngõ\nHoa xao xuyến nở\nNhư mây từng trùm.\n(Theo Tô Hà)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'trùm', correct: 'chùm' },
+            { id: 14, type: 'correction', text: 'Trong trắng mà chang nghiêm\nHương ngát dài ngày đêm\nNhớ hoa giàu ân huệ\nGọi xuân về nắng lên.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'chang', correct: 'trang' },
+            { id: 15, type: 'correction', text: 'Bàn tay lao động\nTa reo sự sống\nTrên từng đất khô;\nBàn tay cần cù\nMặc dù nắng cháy\nKhoai trồng thắm rẫy\nLúa cấy xanh rừng.\n(Theo Hoàng Trung Thông)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'reo', correct: 'gieo' },
+            { id: 16, type: 'correction', text: 'Đất quê hương nát bầm vết đạn\nĐã nuôi dừa năm tháng xanh tươi\nÔi có phải dừa hút bao cay đắng\nĐể chổ ra những trái ngọt cho đời.\n(Theo Lê Anh Xuân)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'chổ', correct: 'trổ' },
+            { id: 17, type: 'correction', text: 'Vươn mình trong gió che đu\nCây kham khổ vẫn hát ru lá cành.\n(Nguyễn Duy)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'che', correct: 'tre' },
+            { id: 18, type: 'correction', text: 'Anh em cùng mẹ khác cha\nCũng như cây cọ xinh ra nhiều cành.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'xinh', correct: 'sinh' },
+            { id: 19, type: 'correction', text: 'Rễ dừa bám sâu vào lòng đất\nNhư dân làng bám trặt quê hương.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'trặt', correct: 'chặt' },
+            { id: 20, type: 'correction', text: 'Đây con sông xuôi dòng nước chảy\nBốn mùa xoi từng mảng mây trời.\n(Hoài Vũ)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'xoi', correct: 'soi' },
+            { id: 21, type: 'correction', text: 'Tìm nơi quần đảo khơi sa\nCó loài hoa nở như là không tên.\n(Nguyễn Đức Mậu)', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'sa', correct: 'xa' },
+            { id: 22, type: 'correction', text: 'Câu hát căng buồm với gió khơi\nĐoàn thuyền trạy đua cùng mặt trời.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'trạy', correct: 'chạy' },
+            { id: 23, type: 'correction', text: 'Người ngắm trăng soi ngoài cửa xổ\nTrăng nhòm khe cửa ngắm nhà thơ.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'xổ', correct: 'sổ' },
+            { id: 24, type: 'correction', text: 'Từ lòng khe hẹp thung xa\nSuối giang tay hát khúc ca hợp đồng.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'giang', correct: 'dang' },
+            { id: 25, type: 'correction', text: 'Núi kia ôm chọn biển xanh\nTa như hạt cát mỏng manh giữa đời.', instruction: 'Tìm từ viết sai chính tả và sửa lại', wrong: 'chọn', correct: 'trọn' }
+        ];
+
+        function App() {
+            const [quizQuestions, setQuizQuestions] = useState([]);
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [userAnswers, setUserAnswers] = useState({});
+            const [isSubmitted, setIsSubmitted] = useState(false);
+            const [timeLeft, setTimeLeft] = useState(600);
+            const [showReview, setShowReview] = useState(false);
+            const [score, setScore] = useState(0);
+
+            const initQuiz = useCallback(() => {
+                const shuffled = [...ALL_QUESTIONS].sort(() => 0.5 - Math.random());
+                setQuizQuestions(shuffled.slice(0, 10));
+                setUserAnswers({});
+                setIsSubmitted(false);
+                setTimeLeft(600);
+                setCurrentIdx(0);
+                setShowReview(false);
+            }, []);
+
+            useEffect(() => { initQuiz(); }, [initQuiz]);
+
+            useEffect(() => {
+                if (timeLeft > 0 && !isSubmitted) {
+                    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                    return () => clearInterval(timer);
+                } else if (timeLeft === 0 && !isSubmitted) {
+                    handleSubmit();
+                }
+            }, [timeLeft, isSubmitted]);
+
+            const handleSubmit = () => {
+                if (isSubmitted) return;
+                let totalScore = 0;
+                quizQuestions.forEach(q => { if (checkAnswer(q)) totalScore += 10; });
+                setScore(totalScore);
+                setIsSubmitted(true);
+            };
+
+            const checkAnswer = (q) => {
+                const userAns = userAnswers[q.id] || {};
+                if (q.type === 'fill') {
+                    return q.answers.every((ans, idx) => (userAns[idx] || '').trim().toLowerCase() === ans.toLowerCase());
+                } else {
+                    return (userAns[0] || '').trim().toLowerCase() === q.wrong.toLowerCase() && 
+                           (userAns[1] || '').trim().toLowerCase() === q.correct.toLowerCase();
+                }
+            };
+
+            const isQuestionAnswered = (qId) => {
+                const ans = userAnswers[qId];
+                if (!ans) return false;
+                const q = quizQuestions.find(item => item.id === qId);
+                if (!q) return false;
+                const vals = Object.values(ans);
+                const reqCount = q.type === 'fill' ? q.placeholders : 2;
+                return vals.length === reqCount && vals.every(v => v.trim() !== '');
+            };
+
+            if (quizQuestions.length === 0) return <div className="p-8 text-center">Đang tải câu hỏi...</div>;
+            const currentQuestion = quizQuestions[currentIdx];
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-6xl mx-auto">
+                        <header className="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <div>
+                                <h1 className="text-2xl font-bold text-blue-700">ÔN TẬP TIẾNG VIỆT CẤP TỈNH</h1>
+                                <p className="text-slate-500 font-medium">Chủ điểm: Chính tả</p>
+                            </div>
+                            <div className="flex items-center gap-6 mt-4 md:mt-0">
+                                <div className={`px-4 py-2 rounded-full font-mono text-xl font-bold border-2 ${timeLeft < 60 ? 'border-red-500 text-red-600 animate-pulse' : 'border-blue-100 text-blue-600'}`}>
+                                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                                </div>
+                                {!isSubmitted && (
+                                    <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold transition-all shadow-lg">Nộp bài</button>
+                                )}
+                            </div>
+                        </header>
+
+                        {isSubmitted && !showReview ? (
+                            <div className="bg-white rounded-3xl p-12 text-center shadow-xl border border-blue-50 max-w-2xl mx-auto mb-8">
+                                <div className="text-5xl font-black text-blue-600 mb-2">{score} / 100</div>
+                                <div className="grid grid-cols-2 gap-4 mt-8">
+                                    <button onClick={() => setShowReview(true)} className="border-2 border-slate-200 hover:border-blue-400 font-bold py-3 px-6 rounded-xl transition-all">Xem đáp án</button>
+                                    <button onClick={initQuiz} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all">Làm lại</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                                <div className="lg:col-span-3">
+                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                        <div className="bg-blue-50 px-8 py-4 border-b border-blue-100 flex justify-between">
+                                            <span className="font-bold text-blue-800">Câu hỏi {currentIdx + 1}</span>
+                                            <span className="text-sm text-blue-600 bg-white px-3 py-1 rounded-full border border-blue-200 font-semibold">10 điểm</span>
+                                        </div>
+                                        <div className="p-8">
+                                            <h3 className="text-lg text-slate-500 mb-4 font-medium italic underline underline-offset-4 decoration-blue-200">{currentQuestion.instruction}</h3>
+                                            <div className="bg-slate-50 p-6 rounded-xl mb-8 leading-relaxed text-lg whitespace-pre-line border-l-4 border-blue-500 shadow-inner">{currentQuestion.text}</div>
+                                            <div className="space-y-6">
+                                                {currentQuestion.type === 'fill' ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {currentQuestion.answers.map((_, idx) => (
+                                                            <div key={idx} className="flex items-center gap-3">
+                                                                <span className="text-slate-400 font-bold">Chỗ {idx + 1}:</span>
+                                                                <input type="text" disabled={isSubmitted} value={userAnswers[currentQuestion.id]?.[idx] || ''} onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: { ...prev[currentQuestion.id], [idx]: val } }));
+                                                                }} className={`flex-1 border-2 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 transition-all ${isSubmitted ? ((userAnswers[currentQuestion.id]?.[idx] || '').trim().toLowerCase() === currentQuestion.answers[idx].toLowerCase() ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500') : 'bg-white border-slate-200'}`} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="text-sm font-bold text-slate-500">Từ viết sai:</label>
+                                                            <input type="text" disabled={isSubmitted} value={userAnswers[currentQuestion.id]?.[0] || ''} onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: { ...prev[currentQuestion.id], [0]: val } }));
+                                                            }} className={`w-full border-2 rounded-lg p-3 ${isSubmitted ? ((userAnswers[currentQuestion.id]?.[0] || '').trim().toLowerCase() === currentQuestion.wrong.toLowerCase() ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500') : 'bg-white border-slate-200'}`} />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-sm font-bold text-slate-500">Sửa lại đúng:</label>
+                                                            <input type="text" disabled={isSubmitted} value={userAnswers[currentQuestion.id]?.[1] || ''} onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: { ...prev[currentQuestion.id], [1]: val } }));
+                                                            }} className={`w-full border-2 rounded-lg p-3 ${isSubmitted ? ((userAnswers[currentQuestion.id]?.[1] || '').trim().toLowerCase() === currentQuestion.correct.toLowerCase() ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500') : 'bg-white border-slate-200'}`} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {isSubmitted && (
+                                                    <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-100">
+                                                        <p className="font-bold text-blue-900 mb-1">Đáp án tài liệu:</p>
+                                                        <p className="text-blue-800">{currentQuestion.type === 'fill' ? `Lần lượt: ${currentQuestion.answers.join(', ')}` : `Sai: ${currentQuestion.wrong} - Đúng: ${currentQuestion.correct}`}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-50 p-6 flex justify-between border-t border-slate-200">
+                                            <button disabled={currentIdx === 0} onClick={() => setCurrentIdx(prev => prev - 1)} className="font-bold text-slate-600 disabled:opacity-30">Quay lại</button>
+                                            <button disabled={currentIdx === quizQuestions.length - 1} onClick={() => setCurrentIdx(prev => prev + 1)} className="bg-white border px-6 py-2 rounded-xl font-bold shadow-sm disabled:opacity-30">Tiếp theo</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="lg:col-span-1">
+                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sticky top-8">
+                                        <h3 className="font-bold text-slate-800 mb-4">Câu hỏi</h3>
+                                        <div className="grid grid-cols-5 gap-3">
+                                            {quizQuestions.map((q, idx) => {
+                                                const answered = isQuestionAnswered(q.id);
+                                                const correct = isSubmitted && checkAnswer(q);
+                                                let cls = "w-10 h-10 flex items-center justify-center rounded-lg border-2 font-bold transition-all ";
+                                                if (isSubmitted) cls += correct ? "bg-green-500 border-green-500 text-white" : "bg-red-500 border-red-500 text-white";
+                                                else if (answered) cls += "bg-green-500 border-green-500 text-white";
+                                                else cls += "bg-white border-slate-200 text-slate-500";
+                                                if (currentIdx === idx) cls += " ring-4 ring-blue-100";
+                                                return <button key={idx} onClick={() => setCurrentIdx(idx)} className={cls}>{idx + 1}</button>;
+                                            })}
+                                        </div>
+                                        {isSubmitted && <button onClick={initQuiz} className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-bold">Làm lại</button>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
