@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống thi Tiếng Việt Cấp Tỉnh</title>
+    <title>Hệ thống thi Tiếng Việt Cấp Tỉnh - Phiên bản V1</title>
     <!-- React & Tailwind -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -41,7 +41,7 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback, useRef } = React;
 
-        // DANH SÁCH 10 MÃ ĐỊNH DANH GẮN LIỀN VỚI TÊN HỌC SINH
+        // DANH SÁCH 10 MÃ ĐỊNH DANH V1
         const STUDENT_DATABASE = {
             'VC-9921': 'Phạm Văn Chiến',
             'VC-1123': 'Phạm Văn Chiến',
@@ -60,7 +60,7 @@
             { id: 2, type: 'fill', text: 'Dọc ngang biết mấy nẻo đường\nThắm ……ang sử Việt, rạng ……ương anh hùng\nBao nhiêu ……iến thắng lẫy lừng\nLàm nên Tổ quốc kiêu hùng hôm nay.\n(Nguyễn Lâm Thắng)', instruction: 'Điền “ch” hoặc “tr” vào chỗ trống', answers: ['tr', 'ch', 'ch'], placeholders: 3 },
             { id: 3, type: 'fill', text: 'Chị nhảy vào ổ lá\nNằm ……uống rồi đứng lên\nChân ……oay tròn ……ột ……oạt\nMột hồi mới nằm yên', instruction: 'Điền “x” hoặc “s” vào chỗ trống', answers: ['x', 'x', 's', 's'], placeholders: 4 },
             { id: 4, type: 'fill', text: 'Yêu hàng ớt đã …..a hoa\nĐám …..ưa trổ nụ, đám cà trổ bông.\nYêu sao tiếng mẹ …..u nồng,\nTiếng thoi lách cách bên nong …..âu tằm.\n(Lê Anh Xuân)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['r', 'd', 'r', 'd'], placeholders: 4 },
-            { id: 5, type: 'fill', text: 'Mẹ ơi tóc bạc tuổi già,\nCấy đêm mẹ vẫn …..ông pha chẳng …..ờn.\nNgón tay bật máu mảnh bom,\nCấy bao nhiêu mạ, căm hờn bấy nhiêu.\n(Lê Anh Xuân)', instruction: 'Điền “x” hoặc “s” vào chỗ trống', answers: ['x', 's'], placeholders: 2 },
+            { id: 5, type: 'fill', text: 'Mẹ ơi tóc bạc tuổi già,\nCấy đêm mẹ vẫn …..ông pha chẳng …..ờn.\nNgón tay bật máu mảnh bom,\nCấy bao nhiêu mạ, căm h hờn bấy nhiêu.\n(Lê Anh Xuân)', instruction: 'Điền “x” hoặc “s” vào chỗ trống', answers: ['x', 's'], placeholders: 2 },
             { id: 6, type: 'fill', text: 'Bốn mặt quê hương …..ải phóng …..ồi\nTôi bỗng thấy nội tôi trẻ lại\nNhư thời con gái tuổi đôi mươi\nNhư hàng …..ừa trước ngõ nhà tôi.\n(Lê Anh Xuân)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['gi', 'r', 'd'], placeholders: 3 },
             { id: 7, type: 'fill', text: 'Bờ tre cõng tiếng sáo …..iều\nKhúc …..ân ca lại dặt dìu lời …..u\nBốn mùa là đóng câu thơ\nNgọt ngào nồng ấm …..ữa bờ ca …..ao.\n(Theo Nguyễn Lâm Thắng)', instruction: 'Điền “r/d” hoặc “gi” vào chỗ trống', answers: ['d', 'd', 'r', 'gi', 'd'], placeholders: 5 },
             { id: 8, type: 'fill', text: 'Nòi …..e đâu …..ịu mọc cong\nChưa lên đã nhọn như …..ông lạ thường\nLưng …..ần phơi nắng phơi sương\nCó manh áo cộc, …..e nhường cho con.\n(Theo Nguyễn Duy)', instruction: 'Điền “ch” hoặc “tr” vào chỗ trống', answers: ['tr', 'ch', 'ch', 'tr', 'tr'], placeholders: 5 },
@@ -97,71 +97,79 @@
             const [history, setHistory] = useState([]);
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
+            const [isOffline, setIsOffline] = useState(false);
 
             const dbRef = useRef(null);
             const authRef = useRef(null);
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'spelling-quiz-v4';
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'spelling-quiz-v4-v1';
 
             useEffect(() => {
-                const timer = setTimeout(() => {
+                const initFirebase = async () => {
                     if (!window.FirebaseSDK) return;
                     const { initializeApp, getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken, getFirestore } = window.FirebaseSDK;
                     
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(firebaseConfig);
-                    authRef.current = getAuth(app);
-                    dbRef.current = getFirestore(app);
+                    try {
+                        // Kiểm tra nếu biến config tồn tại
+                        if (typeof __firebase_config !== 'undefined') {
+                            const firebaseConfig = JSON.parse(__firebase_config);
+                            const app = initializeApp(firebaseConfig);
+                            authRef.current = getAuth(app);
+                            dbRef.current = getFirestore(app);
 
-                    const initAuth = async () => {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(authRef.current, __initial_auth_token);
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(authRef.current, __initial_auth_token);
+                            } else {
+                                await signInAnonymously(authRef.current);
+                            }
+
+                            onAuthStateChanged(authRef.current, (u) => {
+                                setUser(u);
+                                setGameState('login');
+                            });
                         } else {
-                            await signInAnonymously(authRef.current);
+                            throw new Error("No config found");
                         }
-                    };
-                    initAuth();
-
-                    onAuthStateChanged(authRef.current, (u) => {
-                        setUser(u);
+                    } catch (e) {
+                        console.log("Running in offline mode (LocalStorage)");
+                        setIsOffline(true);
                         setGameState('login');
-                    });
-                }, 1000);
-                return () => clearTimeout(timer);
+                    }
+                };
+                initFirebase();
             }, []);
 
-            // Lấy lịch sử theo mã định danh (studentId)
+            // Lấy lịch sử (Firebase hoặc LocalStorage)
             useEffect(() => {
-                if (!user || !dbRef.current || gameState === 'login' || !studentInfo.id) {
-                    setHistory([]);
-                    return;
-                }
-                const { collection, onSnapshot } = window.FirebaseSDK;
-                const q = collection(dbRef.current, 'artifacts', appId, 'public', 'data', 'exam_results');
-                
-                const unsubscribe = onSnapshot(q, (snapshot) => {
-                    const data = snapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(item => item.studentId === studentInfo.id);
-                    
-                    setHistory(data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-                }, (err) => console.error("Firebase Error:", err));
+                if (gameState === 'login' || !studentInfo.id) return;
 
-                return () => unsubscribe();
-            }, [user, gameState, studentInfo.id]);
+                if (isOffline) {
+                    const localData = JSON.parse(localStorage.getItem(`quiz_history_${studentInfo.id}`) || '[]');
+                    setHistory(localData);
+                } else if (user && dbRef.current) {
+                    const { collection, onSnapshot } = window.FirebaseSDK;
+                    const q = collection(dbRef.current, 'artifacts', appId, 'public', 'data', 'exam_results');
+                    const unsubscribe = onSnapshot(q, (snapshot) => {
+                        const data = snapshot.docs
+                            .map(doc => ({ id: doc.id, ...doc.data() }))
+                            .filter(item => item.studentId === studentInfo.id);
+                        setHistory(data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+                    });
+                    return () => unsubscribe();
+                }
+            }, [user, gameState, studentInfo.id, isOffline]);
 
             const handleLogin = (e) => {
                 e.preventDefault();
                 setError('');
                 const inputCode = studentInfo.id.trim().toUpperCase();
-                
                 const foundName = STUDENT_DATABASE[inputCode];
+                
                 if (!foundName) {
                     setError('Mã định danh không chính xác! Vui lòng kiểm tra lại.');
                     return;
                 }
 
                 setLoading(true);
-                // Giả lập xử lý đăng nhập
                 setTimeout(() => {
                     setStudentInfo({ name: foundName, id: inputCode });
                     setGameState('welcome');
@@ -204,18 +212,25 @@
                 setScore(totalScore);
                 setIsSubmitted(true);
                 
-                try {
-                    const { addDoc, collection } = window.FirebaseSDK;
-                    const timeTaken = 600 - timeLeft;
-                    await addDoc(collection(dbRef.current, 'artifacts', appId, 'public', 'data', 'exam_results'), {
-                        timestamp: new Date().toISOString(),
-                        score: totalScore,
-                        timeLabel: `${Math.floor(timeTaken / 60)}p ${timeTaken % 60}s`,
-                        studentName: studentInfo.name,
-                        studentId: studentInfo.id 
-                    });
-                } catch (err) {
-                    console.error("Save Error:", err);
+                const timeTaken = 600 - timeLeft;
+                const resultData = {
+                    timestamp: new Date().toISOString(),
+                    score: totalScore,
+                    timeLabel: `${Math.floor(timeTaken / 60)}p ${timeTaken % 60}s`,
+                    studentName: studentInfo.name,
+                    studentId: studentInfo.id 
+                };
+
+                if (isOffline) {
+                    const currentHistory = JSON.parse(localStorage.getItem(`quiz_history_${studentInfo.id}`) || '[]');
+                    const newHistory = [resultData, ...currentHistory];
+                    localStorage.setItem(`quiz_history_${studentInfo.id}`, JSON.stringify(newHistory));
+                    setHistory(newHistory);
+                } else {
+                    try {
+                        const { addDoc, collection } = window.FirebaseSDK;
+                        await addDoc(collection(dbRef.current, 'artifacts', appId, 'public', 'data', 'exam_results'), resultData);
+                    } catch (err) { console.error("Save Error:", err); }
                 }
             };
 
@@ -240,92 +255,67 @@
             };
 
             if (gameState === 'loading') {
-                return <div className="min-h-screen flex items-center justify-center font-black text-slate-300 uppercase tracking-widest animate-pulse">Khởi động hệ thống...</div>;
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="font-black text-slate-400 uppercase tracking-widest">Đang tải V1...</p>
+                        </div>
+                    </div>
+                );
             }
 
-            // MÀN HÌNH ĐĂNG NHẬP (CHỈ NHẬP MÃ)
             if (gameState === 'login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-                        <div className="bg-white rounded-[3rem] shadow-2xl p-8 md:p-14 max-w-md w-full border border-slate-100 animate-in zoom-in duration-500 relative overflow-hidden">
+                        <div className="bg-white rounded-[3rem] shadow-2xl p-8 md:p-14 max-w-md w-full border border-slate-100 animate-in zoom-in duration-500 relative overflow-hidden text-center">
                             <div className="absolute top-0 left-0 w-full h-3 bg-blue-600"></div>
-                            <div className="text-center mb-12">
-                                <div className="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 animate-float">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
-                                </div>
-                                <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2 uppercase">Hệ Thống Thi</h1>
-                                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em]">Nhập mã định danh để tiếp tục</p>
+                            <div className="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 animate-float">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
                             </div>
+                            <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2 uppercase text-center">Hệ Thống Thi V1</h1>
+                            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em] text-center mb-8">Nhập mã định danh để tiếp tục</p>
                             
                             <form onSubmit={handleLogin} className="space-y-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Mã Định Danh Của Em</label>
-                                    <div className="relative">
-                                        <input 
-                                            required 
-                                            type="text" 
-                                            value={studentInfo.id} 
-                                            onChange={e => setStudentInfo({...studentInfo, id: e.target.value})} 
-                                            className={`w-full px-8 py-5 bg-slate-50 border-2 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-black text-2xl text-blue-600 placeholder:text-slate-200 uppercase text-center tracking-widest ${error ? 'border-red-500 shake' : 'border-slate-50'}`} 
-                                            placeholder="VD: VC-9921" 
-                                        />
-                                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none opacity-20">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                                        </div>
-                                    </div>
+                                <div className="text-left">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Mã Định Danh</label>
+                                    <input required type="text" value={studentInfo.id} onChange={e => setStudentInfo({...studentInfo, id: e.target.value})} className={`w-full px-8 py-5 bg-slate-50 border-2 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-black text-2xl text-blue-600 placeholder:text-slate-200 uppercase text-center tracking-widest ${error ? 'border-red-500 shake' : 'border-slate-50'}`} placeholder="VD: VC-9921" />
                                     {error && <p className="text-red-500 text-[10px] font-black text-center mt-4 uppercase tracking-wider">{error}</p>}
                                 </div>
-
-                                <button 
-                                    type="submit" 
-                                    disabled={loading || !user} 
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-100 flex justify-center items-center gap-3 mt-6 active:scale-95 group"
-                                >
+                                <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-100 flex justify-center items-center gap-3 active:scale-95 group uppercase tracking-widest">
                                     {loading ? "Đang Tra Cứu..." : "Xác Nhận Đăng Nhập"}
-                                    {!loading && <svg className="group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>}
                                 </button>
                             </form>
-                            
                             <div className="mt-12 pt-8 border-t border-slate-50 text-center">
-                                <p className="text-[9px] text-slate-300 font-black uppercase tracking-[0.2em]">Dành cho kỳ thi Tiếng Việt Cấp Tỉnh</p>
+                                <p className="text-[9px] text-slate-300 font-black uppercase tracking-[0.2em]">{isOffline ? "Chế độ: Ngoại tuyến" : "Chế độ: Đám mây"}</p>
                             </div>
                         </div>
                     </div>
                 );
             }
 
-            // MÀN HÌNH CHÀO MỪNG (WELCOME)
             if (gameState === 'welcome') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-50">
                         <div className="bg-white rounded-[4rem] shadow-2xl p-10 md:p-16 max-w-lg w-full text-center border border-white animate-in slide-in-from-bottom-10 duration-700">
-                            <div className="mb-8">
-                                <span className="px-6 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.3em] border border-blue-100">Xác thực thành công</span>
-                            </div>
-                            <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.5em] mb-4">Chào mừng học sinh</h2>
-                            <h1 className="text-5xl font-black text-slate-800 mb-2 leading-tight tracking-tighter">{studentInfo.name}</h1>
+                            <span className="px-6 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-8 inline-block">Xác thực thành công</span>
+                            <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.5em] mb-4 text-center">Chào mừng học sinh</h2>
+                            <h1 className="text-5xl font-black text-slate-800 mb-2 leading-tight tracking-tighter text-center">{studentInfo.name}</h1>
                             <div className="inline-flex items-center gap-2 mb-12">
                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                                 <p className="text-slate-400 font-black text-sm tracking-[0.2em]">{studentInfo.id}</p>
                             </div>
-                            
                             <div className="grid grid-cols-1 gap-5">
-                                <button onClick={initQuiz} className="bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl transition-all shadow-2xl shadow-blue-100 transform hover:-translate-y-1 active:scale-95 text-xl tracking-[0.2em] uppercase">
-                                    Bắt Đầu Thi
-                                </button>
-                                <button onClick={handleLogout} className="bg-slate-50 hover:bg-slate-100 text-slate-400 font-black py-5 rounded-3xl transition-all flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest border border-slate-100">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                    Đổi Mã Định Danh
-                                </button>
+                                <button onClick={initQuiz} className="bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl transition-all shadow-2xl shadow-blue-100 transform hover:-translate-y-1 active:scale-95 text-xl tracking-[0.2em] uppercase">Bắt Đầu Thi</button>
+                                <button onClick={handleLogout} className="bg-slate-50 hover:bg-slate-100 text-slate-400 font-black py-5 rounded-3xl transition-all uppercase text-[10px] tracking-widest border border-slate-100">Đổi Mã Định Danh</button>
                             </div>
                         </div>
-
                         {history.length > 0 && (
                             <div className="mt-16 max-w-lg w-full animate-in fade-in duration-1000">
-                                <h3 className="text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] mb-8">Lịch sử bài thi của em</h3>
+                                <h3 className="text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] mb-8">Lịch sử bài thi của em (V1)</h3>
                                 <div className="space-y-4">
-                                    {history.slice(0, 3).map(h => (
-                                        <div key={h.id} className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] flex justify-between items-center border border-white shadow-sm hover:shadow-lg transition-all transform hover:-translate-x-1">
+                                    {history.slice(0, 3).map((h, i) => (
+                                        <div key={i} className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] flex justify-between items-center border border-white shadow-sm hover:shadow-lg transition-all transform hover:-translate-x-1 text-left">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-[10px] font-black text-slate-300 uppercase">{new Date(h.timestamp).toLocaleDateString('vi-VN')}</span>
                                                 <span className="text-slate-500 font-bold text-xs italic opacity-60">{h.timeLabel}</span>
@@ -350,8 +340,8 @@
                                 <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-100">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
                                 </div>
-                                <div>
-                                    <h1 className="text-xl font-black text-slate-800 tracking-tight leading-tight uppercase">Phòng Thi Tiếng Việt</h1>
+                                <div className="text-left">
+                                    <h1 className="text-xl font-black text-slate-800 tracking-tight leading-tight uppercase">Phòng Thi V1</h1>
                                     <p className="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] mt-0.5">{studentInfo.name} • {studentInfo.id}</p>
                                 </div>
                             </div>
@@ -366,25 +356,25 @@
                         </header>
 
                         {isSubmitted && !showReview ? (
-                            <div className="bg-white rounded-[4rem] p-16 text-center shadow-2xl border border-white max-w-2xl mx-auto mb-20 animate-in zoom-in duration-500 relative">
+                            <div className="bg-white rounded-[4rem] p-16 text-center shadow-2xl border border-white max-w-2xl mx-auto mb-20 animate-in zoom-in duration-500 relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-4 bg-blue-600"></div>
-                                <h3 className="text-[11px] font-black text-blue-400 uppercase tracking-[0.6em] mb-6">Kết quả của em</h3>
-                                <div className="text-[14rem] font-black text-blue-600 leading-none drop-shadow-[0_20px_20px_rgba(37,99,235,0.2)] mb-8">{score}</div>
-                                <div className="text-2xl font-black text-slate-300 mb-16 uppercase tracking-widest italic leading-relaxed">"Bài thi của {studentInfo.name} đã được ghi lại!"</div>
+                                <h3 className="text-[11px] font-black text-blue-400 uppercase tracking-[0.6em] mb-6">Kết quả đạt được</h3>
+                                <div className="text-[14rem] font-black text-blue-600 leading-none drop-shadow-xl mb-8">{score}</div>
+                                <div className="text-2xl font-black text-slate-300 mb-16 uppercase tracking-widest italic tracking-tight">"Mã {studentInfo.id} đã nộp bài thành công!"</div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-md mx-auto">
-                                    <button onClick={() => setShowReview(true)} className="border-2 border-slate-100 hover:border-blue-500 hover:text-blue-600 font-black py-5 px-8 rounded-3xl transition-all uppercase text-xs tracking-widest">Xem đáp án</button>
-                                    <button onClick={initQuiz} className="bg-blue-600 hover:bg-blue-700 text-white font-black py-5 px-8 rounded-3xl transition-all shadow-2xl shadow-blue-100 active:scale-95 uppercase text-xs tracking-widest">Thi lại bài mới</button>
+                                    <button onClick={() => setShowReview(true)} className="border-2 border-slate-100 hover:border-blue-500 font-black py-5 px-8 rounded-3xl transition-all uppercase text-xs tracking-widest">Xem đáp án</button>
+                                    <button onClick={initQuiz} className="bg-blue-600 hover:bg-blue-700 text-white font-black py-5 px-8 rounded-3xl transition-all shadow-2xl shadow-blue-100 active:scale-95 uppercase text-xs tracking-widest">Thi lại bài khác</button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mb-20">
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mb-20 text-left">
                                 <div className="lg:col-span-3">
                                     <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden">
                                         <div className="bg-slate-50/50 px-12 py-7 border-b border-slate-100 flex justify-between items-center">
                                             <span className="font-black text-slate-300 uppercase text-[10px] tracking-[0.5em]">Câu hỏi {currentIdx + 1} / 10</span>
                                             <div className="flex gap-2.5">
                                                 {[...Array(10)].map((_, i) => (
-                                                    <div key={i} className={`w-4 h-2 rounded-full transition-all duration-500 ${i === currentIdx ? 'bg-blue-600 w-12' : 'bg-slate-200'}`}></div>
+                                                    <div key={i} className={`w-4 h-2 rounded-full transition-all duration-500 ${i === currentIdx ? 'bg-blue-600 w-12' : 'bg-slate-200'} shadow-sm`}></div>
                                                 ))}
                                             </div>
                                         </div>
@@ -396,7 +386,7 @@
                                                 {currentQuestion.type === 'fill' ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                                                         {currentQuestion.answers.map((_, idx) => (
-                                                            <div key={idx} className="group">
+                                                            <div key={idx} className="group flex flex-col items-start">
                                                                 <span className="text-slate-300 text-[11px] font-black uppercase ml-1 tracking-[0.4em] group-focus-within:text-blue-500 transition-colors">Vị trí {idx + 1}</span>
                                                                 <input type="text" disabled={isSubmitted} value={userAnswers[currentQuestion.id]?.[idx] || ''} onChange={(e) => {
                                                                     const val = e.target.value;
@@ -408,14 +398,14 @@
                                                 ) : (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                                                         <div>
-                                                            <label className="text-[11px] font-black text-slate-300 uppercase ml-1 mb-4 block tracking-[0.4em]">Từ viết sai trong thơ</label>
+                                                            <label className="text-[11px] font-black text-slate-300 uppercase ml-1 mb-4 block tracking-[0.4em]">Từ viết sai</label>
                                                             <input type="text" disabled={isSubmitted} value={userAnswers[currentQuestion.id]?.[0] || ''} onChange={(e) => {
                                                                 const val = e.target.value;
                                                                 setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: { ...prev[currentQuestion.id], [0]: val } }));
                                                             }} className={`w-full border-2 rounded-2xl p-7 font-black text-3xl shadow-sm ${isSubmitted ? ((userAnswers[currentQuestion.id]?.[0] || '').trim().toLowerCase() === currentQuestion.wrong.toLowerCase() ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700') : 'bg-white border-slate-50 focus:border-blue-400'}`} />
                                                         </div>
                                                         <div>
-                                                            <label className="text-[11px] font-black text-slate-300 uppercase ml-1 mb-4 block tracking-[0.4em]">Sửa lại cho đúng</label>
+                                                            <label className="text-[11px] font-black text-slate-300 uppercase ml-1 mb-4 block tracking-[0.4em]">Sửa lại đúng</label>
                                                             <input type="text" disabled={isSubmitted} value={userAnswers[currentQuestion.id]?.[1] || ''} onChange={(e) => {
                                                                 const val = e.target.value;
                                                                 setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: { ...prev[currentQuestion.id], [1]: val } }));
@@ -437,10 +427,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div className="lg:col-span-1">
+                                <div className="lg:col-span-1 text-center">
                                     <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 p-10 sticky top-32">
-                                        <h3 className="font-black text-slate-800 mb-10 text-[11px] uppercase tracking-[0.5em] border-b-2 border-slate-50 pb-6 text-center">Bảng Câu Hỏi</h3>
+                                        <h3 className="font-black text-slate-800 mb-10 text-[11px] uppercase tracking-[0.5em] border-b-2 border-slate-50 pb-6">Tiến Độ Thi</h3>
                                         <div className="grid grid-cols-5 gap-4 mb-12">
                                             {quizQuestions.map((q, idx) => {
                                                 const answered = isQuestionAnswered(q.id);
@@ -453,31 +442,27 @@
                                                 return <button key={idx} onClick={() => setCurrentIdx(idx)} className={cls}>{idx + 1}</button>;
                                             })}
                                         </div>
-                                        
                                         <div className="space-y-6 pt-10 border-t border-slate-50">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Đã làm</span>
+                                                <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Hoàn thành</span>
                                                 <span className="font-black text-blue-600 text-sm">{quizQuestions.filter(q => isQuestionAnswered(q.id)).length} / 10</span>
                                             </div>
                                             <div className="w-full bg-slate-50 h-3 rounded-full overflow-hidden">
                                                 <div className="bg-blue-500 h-full transition-all duration-1000 ease-out shadow-lg" style={{width: `${(quizQuestions.filter(q => isQuestionAnswered(q.id)).length / 10) * 100}%`}}></div>
                                             </div>
                                         </div>
-                                        
                                         {isSubmitted && (
-                                            <button onClick={() => setGameState('welcome')} className="w-full mt-14 py-6 bg-slate-50 text-slate-400 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] hover:bg-slate-100 transition-all border border-slate-100">Về Hồ Sơ Của Em</button>
+                                            <button onClick={() => setGameState('welcome')} className="w-full mt-14 py-6 bg-slate-50 text-slate-400 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] hover:bg-slate-100 transition-all border border-slate-100 uppercase tracking-widest">Trang cá nhân</button>
                                         )}
                                     </div>
                                 </div>
                             </div>
                         )}
-                        
-                        {/* LỊCH SỬ KẾT QUẢ RIÊNG CHO TỪNG MÃ ĐỊNH DANH */}
                         {history.length > 0 && gameState !== 'login' && (
                             <div className="mt-24 bg-white rounded-[5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] border border-white overflow-hidden animate-in fade-in duration-1000 delay-300 border-t-[12px] border-t-blue-600">
-                                <div className="px-16 py-14 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-10">
+                                <div className="px-16 py-14 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-10 text-left">
                                     <div>
-                                        <h3 className="font-black text-5xl text-slate-800 tracking-tighter leading-none mb-4 uppercase italic">Sổ Tay Kết Quả</h3>
+                                        <h3 className="font-black text-5xl text-slate-800 tracking-tighter leading-none mb-4 uppercase italic">Sổ Tay Kết Quả V1</h3>
                                         <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.5em] flex items-center gap-3">Học sinh: <span className="text-blue-600 border-b-2 border-blue-100">{studentInfo.name}</span> <span className="opacity-20">|</span> Mã: <span className="text-blue-600">{studentInfo.id}</span></p>
                                     </div>
                                     <div className="flex items-center gap-5">
@@ -488,15 +473,15 @@
                                     <table className="w-full text-left">
                                         <thead className="text-[11px] uppercase text-slate-300 font-black border-b-2 border-slate-50">
                                             <tr>
-                                                <th className="px-10 py-8">Thứ tự</th>
-                                                <th className="px-10 py-8">Thời điểm làm bài</th>
-                                                <th className="px-10 py-8">Tốc độ làm</th>
-                                                <th className="px-10 py-8 text-right">Điểm đạt được</th>
+                                                <th className="px-10 py-8">STT</th>
+                                                <th className="px-10 py-8">Thời điểm</th>
+                                                <th className="px-10 py-8">Tốc độ</th>
+                                                <th className="px-10 py-8 text-right">Điểm đạt</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
                                             {history.map((h, i) => (
-                                                <tr key={h.id} className="hover:bg-blue-50/40 transition-all group cursor-default">
+                                                <tr key={i} className="hover:bg-blue-50/40 transition-all group cursor-default">
                                                     <td className="px-10 py-10 font-black text-slate-200 group-hover:text-blue-500 transition-colors text-2xl">#{history.length - i}</td>
                                                     <td className="px-10 py-10 text-slate-600 font-black text-sm">{new Date(h.timestamp).toLocaleString('vi-VN')}</td>
                                                     <td className="px-10 py-10 text-slate-400 font-bold italic text-xs uppercase tracking-widest">{h.timeLabel}</td>
